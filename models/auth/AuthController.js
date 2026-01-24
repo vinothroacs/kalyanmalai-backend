@@ -91,7 +91,7 @@ exports.register = async (req, res) => {
       return res.status(409).json({ message: "User already exists" });
     }
 
-    // 🔐 Hash password
+   // // 🔐 Hash password
     const hash = await bcrypt.hash(password, 10);
 
     // ✅ Insert USER (role = 2)
