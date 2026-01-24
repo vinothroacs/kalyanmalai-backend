@@ -12,7 +12,7 @@ exports.verifyToken = (req, res, next) => {
 
     req.user = {
       id: decoded.id,
-      role: decoded.role,
+      roleId: decoded.roleId,
     };
 
     next();
@@ -23,7 +23,7 @@ exports.verifyToken = (req, res, next) => {
 
 exports.authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.roleId)) {
       return res.status(403).json({ message: "Access denied" });
     }
     next();

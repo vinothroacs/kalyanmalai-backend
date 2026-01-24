@@ -1,11 +1,18 @@
+// backend/models/user/UserRoutes.js  ✅ FIXED & COMPLETE
 const express = require("express");
 const router = express.Router();
 
 const UserController = require("./UserController");
-const { verifyToken } = require("../../middleware/authmiddle");
+// const { verifyToken } = require("../../middleware/authmiddle");
+
+const { verifyToken, authorizeRoles } = require("../../middleware/authmiddle");
 const upload = require("../../middleware/upload");
 
-// 📝 SUBMIT FORM
+/* =========================
+   USER FORM
+========================= */
+
+// 📝 SUBMIT / UPDATE FORM
 router.post(
   "/forms",
   verifyToken,
@@ -16,7 +23,6 @@ router.post(
   UserController.submitForm
 );
 
-
 // 🔍 FORM STATUS
 router.get(
   "/forms/status",
@@ -24,18 +30,34 @@ router.get(
   UserController.checkFormStatus
 );
 
-// 👤 ACCOUNT DETAILS
+/* =========================
+   ACCOUNT
+========================= */
+
+// 👤 GET ACCOUNT DETAILS
 router.get(
   "/account-details",
   verifyToken,
   UserController.getAccountDetails
 );
 
+// ✏️ UPDATE ACCOUNT DETAILS
 router.put(
   "/account-details",
   verifyToken,
   UserController.updateAccountDetails
 );
+
+// 🗑️ DELETE ACCOUNT (SOFT)
+router.delete(
+  "/account-details",
+  verifyToken,
+  UserController.deleteAccountDetails
+);
+
+/* =========================
+   MATCHES & CONNECTIONS
+========================= */
 
 // 🔥 MATCHES
 router.get(
@@ -44,38 +66,53 @@ router.get(
   UserController.getMatches
 );
 
-// ❤️ CONNECTION REQUEST
+// ❤️ SEND CONNECTION REQUEST
 router.post(
   "/connect/request",
   verifyToken,
   UserController.sendConnectionRequest
 );
 
-// 🔓 FULL PROFILE
+// ❤️ MY CONNECTIONS (APPROVED)
+router.get(
+  "/connections",
+  verifyToken,
+  UserController.getMyConnections
+);
+
+// 👁 FULL PROFILE (ONLY APPROVED CONNECTION)
 router.get(
   "/connect/full-profile/:otherUserId",
   verifyToken,
   UserController.getFullProfile
 );
 
-// 🔔 NOTIFICATIONS
+/* =========================
+   NOTIFICATIONS
+========================= */
+
+// 🔔 GET NOTIFICATIONS
 router.get(
   "/notifications",
   verifyToken,
   UserController.getUserNotifications
 );
 
+// ✅ MARK AS READ
 router.put(
   "/notifications/mark-read",
   verifyToken,
   UserController.markNotificationsRead
 );
 
-// ❤️ CONNECTIONS
+// user/UserRoutes.js
 router.get(
-  "/connections",
+  "/dashboard",
   verifyToken,
-  UserController.getMyConnections
+  authorizeRoles(2), // user
+  (req, res) => {
+    res.json({ message: "User dashboard" });
+  }
 );
 
 module.exports = router;

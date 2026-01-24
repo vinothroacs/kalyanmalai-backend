@@ -7,12 +7,12 @@ exports.getPendingForms = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        uf.id,
+        uf.id AS form_id,
+        uf.user_id,
         uf.full_name_en,
         uf.gender,
-        uf.location,
-        uf.status,
-        u.email
+        uf.phone,
+        u.email AS user_email
       FROM user_forms uf
       JOIN users u ON u.id = uf.user_id
       WHERE uf.status = 'pending'
@@ -25,6 +25,9 @@ exports.getPendingForms = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch pending forms" });
   }
 };
+
+
+
 
 /* =====================================================
    ✅ APPROVE FORM
@@ -102,20 +105,91 @@ exports.getAllUsers = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        id,
-        name AS user_name,
-        email,
-        gender,
-        status
-      FROM users
-      WHERE role = 'user'
-      ORDER BY id DESC
+        u.id,
+        u.name AS user_name,
+        u.email,
+        f.gender,
+        u.status
+      FROM users u
+      LEFT JOIN user_forms f ON f.user_id = u.id
+      WHERE u.role = '2'
+      ORDER BY u.id DESC
     `);
 
-    res.json(rows); // 👈 IMPORTANT (array only)
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to fetch users" });
+  }
+};
+
+/* =====================================================
+   👁 ADMIN VIEW FULL USER PROFILE
+===================================================== */
+exports.getUserFullProfile = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const [[profile]] = await db.query(
+      `
+      SELECT 
+        u.email,
+        u.phone,
+        u.gender,
+        u.marital_status,
+        u.status,
+        f.*
+      FROM users u
+      LEFT JOIN user_forms f ON f.user_id = u.id
+      WHERE u.id = ?
+      `,
+      [userId]
+    );
+
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    // File URLs
+    if (profile.profile_photo) {
+      profile.profile_photo = `http://localhost:5000/uploads/${profile.profile_photo}`;
+    }
+
+    if (profile.horoscope) {
+      profile.horoscope = `http://localhost:5000/uploads/${profile.horoscope}`;
+    }
+
+    res.json(profile);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch full profile" });
+  }
+};
+
+
+
+
+/* =====================================================
+   🔁 UPDATE USER STATUS (ACTIVE / INACTIVE)
+===================================================== */
+exports.updateUserStatus = async (req, res) => {
+  const { userId } = req.params;
+  const { status } = req.body; // 'active' | 'inactive'
+
+  if (!["active", "inactive"].includes(status)) {
+    return res.status(400).json({ message: "Invalid status" });
+  }
+
+  try {
+    await db.query(
+      "UPDATE users SET status = ? WHERE id = ? AND role = '2'",
+      [status, userId]
+    );
+
+    res.json({ success: true, status });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Status update failed" });
   }
 };
 
@@ -147,16 +221,18 @@ exports.getPendingConnections = async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         c.id,
-        su.name AS sender_name,
-        su.email AS sender_email,
-        ru.name AS receiver_name,
-        ru.email AS receiver_email,
+        c.sender_id,
+        c.receiver_id,
+        sf.full_name_en AS sender_name,
+        rf.full_name_en AS receiver_name,
         c.status,
         c.created_at
       FROM connections c
-      JOIN users su ON su.id = c.sender_id
-      JOIN users ru ON ru.id = c.receiver_id
+      INNER JOIN user_forms sf ON sf.user_id = c.sender_id
+      INNER JOIN user_forms rf ON rf.user_id = c.receiver_id
       WHERE c.status = 'pending'
+        AND sf.status = 'approved'
+        AND rf.status = 'approved'
       ORDER BY c.created_at DESC
     `);
 
@@ -166,6 +242,7 @@ exports.getPendingConnections = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch pending connections" });
   }
 };
+
 
 /* =====================================================
    ✅ APPROVE CONNECTION (24 HOURS)
@@ -238,5 +315,41 @@ exports.rejectConnection = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Reject connection failed" });
+  }
+};
+
+/* =====================================================
+   📊 ADMIN DASHBOARD STATS (USER GROWTH)
+===================================================== */
+/* =====================================================
+   📊 ADMIN DASHBOARD STATS
+===================================================== */
+/* =====================================================
+   📊 ADMIN DASHBOARD STATS (ALL COUNTS)
+===================================================== */
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        COUNT(*) AS totalUsers,
+        SUM(LOWER(TRIM(status)) = 'active') AS activeUsers,
+        SUM(LOWER(TRIM(status)) = 'inactive') AS inactiveUsers,
+        SUM(gender = 'Male') AS maleUsers,
+        SUM(gender = 'Female') AS femaleUsers
+      FROM users
+      WHERE role = 2
+    `);
+
+    res.json({
+      labels: ["Users"],
+      totalUsers: rows[0].totalUsers,
+      activeUsers: rows[0].activeUsers,
+      inactiveUsers: rows[0].inactiveUsers,
+      maleUsers: rows[0].maleUsers,
+      femaleUsers: rows[0].femaleUsers,
+    });
+  } catch (err) {
+    console.error("Dashboard stats error:", err);
+    res.status(500).json({ message: "Dashboard stats failed" });
   }
 };

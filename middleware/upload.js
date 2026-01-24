@@ -2,14 +2,30 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const uploadDir = path.join(__dirname, "../uploads/profile_photos");
+const baseUploadDir = path.join(__dirname, "../uploads");
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const ensureDir = (dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+};
 
 const storage = multer.diskStorage({
-  destination: uploadDir,
+  destination: (req, file, cb) => {
+    let folder = "others";
+
+    if (file.fieldname === "profile_photo") {
+      folder = "profile_photos";
+    } else if (file.fieldname === "horoscope") {
+      folder = "horoscopes";
+    }
+
+    const uploadPath = path.join(baseUploadDir, folder);
+    ensureDir(uploadPath);
+
+    cb(null, uploadPath);
+  },
+
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
   },
@@ -17,7 +33,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 module.exports = upload;
