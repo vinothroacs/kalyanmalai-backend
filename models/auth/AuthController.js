@@ -71,13 +71,15 @@ exports.login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.json({
-      success: true,
-      user: {
-        roleId,           // 1 = admin, 2 = user
-        hasSubmittedForm, // true / false
-      },
-    });
+return res.json({
+  success: true,
+  token,   // 🔥 ADD THIS LINE
+  user: {
+    roleId,
+    hasSubmittedForm,
+  },
+});
+
 
 
   } catch (err) {
