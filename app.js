@@ -28,7 +28,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(cors()); 
+
 
 /* ✅ ROUTES */
 app.use("/api/v1/auth", require("./models/auth/AuthRoutes"));
