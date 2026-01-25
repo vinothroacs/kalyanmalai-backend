@@ -1,11 +1,12 @@
 const express = require("express");
+const cookieParser = require("cookie-parser");
+
 const cors = require("cors");
 const path = require("path");
 
 const app = express();
 app.use(cookieParser());
 
-const cookieParser = require("cookie-parser");
 
 app.use(cookieParser());
 
