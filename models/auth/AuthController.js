@@ -56,14 +56,29 @@ exports.login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // ✅ FINAL RESPONSE
+    // // ✅ FINAL RESPONSE
+    // return res.json({
+    //   token,
+    //   user: {
+    //     roleId,            // 1 = admin, 2 = user
+    //     hasSubmittedForm,  // true / false
+    //   },
+    // });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,        // Render HTTPS
+      sameSite: "none",    // Netlify ↔ Render
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return res.json({
-      token,
+      success: true,
       user: {
-        roleId,            // 1 = admin, 2 = user
-        hasSubmittedForm,  // true / false
+        roleId,           // 1 = admin, 2 = user
+        hasSubmittedForm, // true / false
       },
     });
+
 
   } catch (err) {
     console.error("LOGIN ERROR:", err);

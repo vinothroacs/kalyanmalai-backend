@@ -3,6 +3,12 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
+app.use(cookieParser());
+
+const cookieParser = require("cookie-parser");
+
+app.use(cookieParser());
+
 
 /* ✅ STATIC FILES */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -11,12 +17,17 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+/* ✅ COOKIE PARSER (🔥 AFTER body parser, BEFORE routes) */
+app.use(cookieParser());
+
 /* ✅ CORS */
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
       "https://kalyanamalai-frontend.onrender.com/",
+  
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
